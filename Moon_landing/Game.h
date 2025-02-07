@@ -8,10 +8,11 @@ using namespace std;
 
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
-const float GRAVITY = 1.62f;
-const float MAX_SAFE_LANDING_SPEED = 12.0f;
+const float FREE_FALL_ACCELERATION = 9.8f;
+const float MAX_SAFE_LANDING_SPEED = 25.0f;
 const int LANDING_ZONE_WIDTH = 100;
-const float THRUST_POWER = 5.0f;
+const float HORIZONTAL_THRUST_POWER = 3.0f;  
+const float THRUST_POWER = 25.0f;
 const float ROTATION_SPEED = 50.f;
 const float MOVE_SPEED = 200.f;
 
@@ -32,44 +33,61 @@ private:
 	sf::RenderWindow mWindow;
 	sf::Texture mTexture;
 	sf::Sprite mPlayer;
-	sf::CircleShape mMoon;
+	sf::RectangleShape mLunarSurface;
 	sf::RectangleShape landingZone;
 	sf::Font font;
 	sf::Text velocityText;
+	sf::Text statusText;
 	bool mIsLanded = false;
+	bool mCrashed = false;
 	sf::Vector2f velocity = { 0.f, 0.f };
 	float rotation = 0.f;
+	float verticalThrust = 0.0f; // Ускорение от вертикального двигателя
+	float horizontalThrust = 0.0f; // Ускорение от горизонтального двигателя
 };
 
 Game::Game() : mWindow(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Lunar Landing")
 {
 	float startX = static_cast<float>(rand() % 1600);
 
-	if (!mTexture.loadFromFile("Rocket.png"))
+	try 
 	{
-		cerr << "Failed to load Rocket texture" << endl;
+		if (!mTexture.loadFromFile("Rocket.png"))
+		{
+			throw std::runtime_error("Failed to load Rocket texture: Rocket.png");
+		}
+		mPlayer.setTexture(mTexture);
+		mPlayer.setPosition(startX, 50.f);
+
+		if (!font.loadFromFile("Arial.ttf"))
+		{
+			throw std::runtime_error("Failed to load font: Arial.ttf");
+		}
+
+		velocityText.setFont(font);
+		velocityText.setCharacterSize(24);
+		velocityText.setFillColor(sf::Color::White);
+		velocityText.setPosition(10.f, 10.f);
+
+		statusText.setFont(font); 
+		statusText.setCharacterSize(30);
+		statusText.setFillColor(sf::Color::Yellow);
+		statusText.setPosition(SCREEN_WIDTH / 2.0f - 150.f, 50.f);
+
+	}
+	catch (const std::runtime_error& error) 
+	{
+		cerr << "Exception caught: " << error.what() << endl;
 		exit(1);
 	}
-	mPlayer.setTexture(mTexture);
-	mPlayer.setPosition(startX, 50.f);
 
-	mMoon.setRadius(3000.f);
-	mMoon.setPosition(-2000.f, 800.f); 
-	mMoon.setFillColor(sf::Color::White);
+	mLunarSurface.setSize(sf::Vector2f(SCREEN_WIDTH * 2.0f, 300.f));
+	mLunarSurface.setFillColor(sf::Color::White);
+	mLunarSurface.setPosition(-SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT - 300.f);
 
-	landingZone.setSize(sf::Vector2f(LANDING_ZONE_WIDTH, 10));
+	landingZone.setSize(sf::Vector2f(LANDING_ZONE_WIDTH, 20.f));
 	landingZone.setFillColor(sf::Color(0, 255, 0, 100));
-	landingZone.setPosition(950.f, 790.f);
-
-	if (!font.loadFromFile("Arial.ttf"))
-	{
-		cerr << "Failed to load font" << endl;
-		exit(1);
-	}
-	velocityText.setFont(font);
-	velocityText.setCharacterSize(24);
-	velocityText.setFillColor(sf::Color::White);
-	velocityText.setPosition(10.f, 10.f);
+	landingZone.setPosition(SCREEN_WIDTH / 2.0f - LANDING_ZONE_WIDTH / 2.0f, SCREEN_HEIGHT - 320.f);
 }
 
 void Game::run()
@@ -91,9 +109,9 @@ void Game::run()
 
 void Game::handlePlayerInput(sf::Keyboard::Key key, bool isPressed)
 {
-	if (key == sf::Keyboard::A) velocity.x = isPressed ? -MOVE_SPEED : 0.f;
-	if (key == sf::Keyboard::D) velocity.x = isPressed ? MOVE_SPEED : 0.f;
-	if (key == sf::Keyboard::W && isPressed) velocity.y -= THRUST_POWER;
+	if (key == sf::Keyboard::A) horizontalThrust = isPressed ? -HORIZONTAL_THRUST_POWER : 0.0f;
+	if (key == sf::Keyboard::D) horizontalThrust = isPressed ? HORIZONTAL_THRUST_POWER : 0.0f;
+	if (key == sf::Keyboard::W) verticalThrust = isPressed ? -THRUST_POWER : 0.0f;
 }
 
 void Game::processEvents()
@@ -118,11 +136,23 @@ void Game::processEvents()
 
 void Game::update(sf::Time deltaTime)
 {
-	if (mIsLanded) return;
+	if (mIsLanded || mCrashed) return;
 
-	velocity.y += GRAVITY * deltaTime.asSeconds();
+	// Вертикальное движение
+	float verticalAcceleration = FREE_FALL_ACCELERATION + verticalThrust; // Результирующее вертикальное ускорение
+	velocity.y += verticalAcceleration * deltaTime.asSeconds();
+
+	// Горизонтальное движение
+	velocity.x += horizontalThrust * deltaTime.asSeconds();
+
+	if (horizontalThrust == 0.0f) 
+	{
+		velocity.x *= (1.0f - 0.5f * deltaTime.asSeconds()); // Постепенно замедляем горизонтальную скорость
+		if (abs(velocity.x) < 0.1f) velocity.x = 0.0f; // Останавливаем, если скорость очень мала
+	}
+
 	mPlayer.move(velocity * deltaTime.asSeconds());
-	velocityText.setString("Speed: " + to_string(velocity.y));
+	velocityText.setString("Speed Y: " + to_string(velocity.y) + "\nSpeed X: " + to_string(velocity.x));
 
 	checkLanding();
 }
@@ -130,27 +160,42 @@ void Game::update(sf::Time deltaTime)
 void Game::checkLanding()
 {
 	sf::FloatRect playerBounds = mPlayer.getGlobalBounds();
-	sf::FloatRect moonBounds = mMoon.getGlobalBounds();
+	sf::FloatRect moonBounds = mLunarSurface.getGlobalBounds();
 	sf::FloatRect landingBounds = landingZone.getGlobalBounds();
 	
 	if (playerBounds.intersects(moonBounds))
 	{
+		mPlayer.setPosition(mPlayer.getPosition().x, mLunarSurface.getPosition().y - mTexture.getSize().y); // Фиксируем позицию на поверхности
+
 		if (velocity.y > MAX_SAFE_LANDING_SPEED || !playerBounds.intersects(landingBounds))
 		{
 			cerr << "Crash Landing!" << endl;
-			exit(1);
+			mCrashed = true; 
 		}
-		mIsLanded = true;
-		velocity = { 0.f, 0.f };
+		else
+		{
+			cout << "Landed Successfully!" << endl;
+			mIsLanded = true; 
+		}
 	}
+	
 }
 
 void Game::render()
 {
 	mWindow.clear();
-	mWindow.draw(mMoon);
+	mWindow.draw(mLunarSurface);
 	mWindow.draw(landingZone);
 	mWindow.draw(mPlayer);
 	mWindow.draw(velocityText);
+
+	if (mIsLanded) {
+		statusText.setString("Landed Successfully!");
+		mWindow.draw(statusText);
+	}
+	else if (mCrashed) {
+		statusText.setString("Crash Landing!");
+		mWindow.draw(statusText);
+	}
 	mWindow.display();
 }
