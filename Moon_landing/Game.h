@@ -8,13 +8,11 @@ using namespace std;
 
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
-const float FREE_FALL_ACCELERATION = 9.8f;
+const float FREE_FALL_ACCELERATION = 10.f;
 const float MAX_SAFE_LANDING_SPEED = 25.0f;
 const int LANDING_ZONE_WIDTH = 100;
-const float HORIZONTAL_THRUST_POWER = 3.0f;  
-const float THRUST_POWER = 25.0f;
-const float ROTATION_SPEED = 50.f;
-const float MOVE_SPEED = 200.f;
+const float HORIZONTAL_THRUST_ACCELERATION = 10.0f;
+const float VERTICAL_THRUST_ACCELERATION = 25.0f;
 
 
 class Game
@@ -40,10 +38,11 @@ private:
 	sf::Text statusText;
 	bool mIsLanded = false;
 	bool mCrashed = false;
+	bool mMissed = false;
 	sf::Vector2f velocity = { 0.f, 0.f };
 	float rotation = 0.f;
-	float verticalThrust = 0.0f; // Ускорение от вертикального двигателя
-	float horizontalThrust = 0.0f; // Ускорение от горизонтального двигателя
+	float verticalThrust = 0.0f; 
+	float horizontalThrust = 0.0f; 
 };
 
 Game::Game() : mWindow(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Lunar Landing")
@@ -109,9 +108,9 @@ void Game::run()
 
 void Game::handlePlayerInput(sf::Keyboard::Key key, bool isPressed)
 {
-	if (key == sf::Keyboard::A) horizontalThrust = isPressed ? -HORIZONTAL_THRUST_POWER : 0.0f;
-	if (key == sf::Keyboard::D) horizontalThrust = isPressed ? HORIZONTAL_THRUST_POWER : 0.0f;
-	if (key == sf::Keyboard::W) verticalThrust = isPressed ? -THRUST_POWER : 0.0f;
+	if (key == sf::Keyboard::A) horizontalThrust = isPressed ? -HORIZONTAL_THRUST_ACCELERATION : 0.0f;
+	if (key == sf::Keyboard::D) horizontalThrust = isPressed ? HORIZONTAL_THRUST_ACCELERATION : 0.0f;
+	if (key == sf::Keyboard::W) verticalThrust = isPressed ? -VERTICAL_THRUST_ACCELERATION : 0.0f;
 }
 
 void Game::processEvents()
@@ -136,20 +135,14 @@ void Game::processEvents()
 
 void Game::update(sf::Time deltaTime)
 {
-	if (mIsLanded || mCrashed) return;
+	if (mIsLanded || mCrashed || mMissed) return;
 
 	// Вертикальное движение
-	float verticalAcceleration = FREE_FALL_ACCELERATION + verticalThrust; // Результирующее вертикальное ускорение
+	float verticalAcceleration = FREE_FALL_ACCELERATION + verticalThrust; 
 	velocity.y += verticalAcceleration * deltaTime.asSeconds();
 
 	// Горизонтальное движение
 	velocity.x += horizontalThrust * deltaTime.asSeconds();
-
-	if (horizontalThrust == 0.0f) 
-	{
-		velocity.x *= (1.0f - 0.5f * deltaTime.asSeconds()); // Постепенно замедляем горизонтальную скорость
-		if (abs(velocity.x) < 0.1f) velocity.x = 0.0f; // Останавливаем, если скорость очень мала
-	}
 
 	mPlayer.move(velocity * deltaTime.asSeconds());
 	velocityText.setString("Speed Y: " + to_string(velocity.y) + "\nSpeed X: " + to_string(velocity.x));
@@ -165,12 +158,17 @@ void Game::checkLanding()
 	
 	if (playerBounds.intersects(moonBounds))
 	{
-		mPlayer.setPosition(mPlayer.getPosition().x, mLunarSurface.getPosition().y - mTexture.getSize().y); // Фиксируем позицию на поверхности
+		mPlayer.setPosition(mPlayer.getPosition().x, mLunarSurface.getPosition().y - mTexture.getSize().y); 
 
-		if (velocity.y > MAX_SAFE_LANDING_SPEED || !playerBounds.intersects(landingBounds))
+		if (velocity.y > MAX_SAFE_LANDING_SPEED)
 		{
 			cerr << "Crash Landing!" << endl;
 			mCrashed = true; 
+		}
+		else if (velocity.y < MAX_SAFE_LANDING_SPEED && !playerBounds.intersects(landingBounds))
+		{
+			cerr << "Landed outside landing zone, but safely!" << endl;
+			mMissed = true;
 		}
 		else
 		{
@@ -189,12 +187,19 @@ void Game::render()
 	mWindow.draw(mPlayer);
 	mWindow.draw(velocityText);
 
-	if (mIsLanded) {
+	if (mIsLanded) 
+	{
 		statusText.setString("Landed Successfully!");
 		mWindow.draw(statusText);
 	}
-	else if (mCrashed) {
+	else if (mCrashed) 
+	{
 		statusText.setString("Crash Landing!");
+		mWindow.draw(statusText);
+	}
+	else if (mMissed)
+	{
+		statusText.setString("Landed outside landing zone, but safely!");
 		mWindow.draw(statusText);
 	}
 	mWindow.display();
