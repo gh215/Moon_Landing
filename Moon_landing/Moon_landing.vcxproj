@@ -104,7 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)\Resources\Sounds;$(ProjectDir)\src\сpp;$(ProjectDir)\Resources\Pictures;$(ProjectDir)\Resources\Fonts;$(ProjectDir)\src\headers;$(ProjectDir)\SFML-2.6.2\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\Resources\Sounds;$(ProjectDir)\src\сpp;$(ProjectDir)\Resources\Pictures;$(ProjectDir)\Resources\Fonts;$(ProjectDir)\src\headers;D:\Изучение\C++\Библиотеки C++\SFML-2.6.2\include</AdditionalIncludeDirectories>
       <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
       <TranslateIncludes>true</TranslateIncludes>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -112,7 +112,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)\SFML-2.6.2\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>D:\Изучение\C++\Библиотеки C++\SFML-2.6.2\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>sfml-graphics-d.lib;sfml-window-d.lib;sfml-audio-d.lib;sfml-system-d.lib;freetype.lib;sfml-network-d.lib;sfml-main-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
