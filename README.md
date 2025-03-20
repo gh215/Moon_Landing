@@ -13,4 +13,7 @@
          *   Specifying the SFML libraries to link with (e.g., `sfml-graphics.lib`, `sfml-window.lib`, `sfml-system.lib`, etc., depending on which SFML modules you use).
      *   Copy the necessary SFML `.dll` files (from the `bin` directory of the SFML distribution) to the directory where your game executable will be built (e.g., `Debug` or `Release` folders).
 
- Refer to the SFML documentation for more detailed instructions on setting up SFML with your development environment.
+ 4. To make the game work, please insert DLL files from the **DLL_files** folder into the root directory of the game.
+Refer to the SFML documentation for more detailed instructions on setting up SFML with your development environment.
+
+
