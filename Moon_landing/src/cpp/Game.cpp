@@ -1,4 +1,4 @@
-#include "World.h"
+﻿#include "World.h"
 #include "UserInterface.h"
 #include "GameConstants.h"
 #include "Game.h"
@@ -82,20 +82,21 @@ void Game::update(sf::Time deltaTime)
 void Game::checkLanding()
 {
     sf::FloatRect playerBounds = mPlayer.getBounds();
-    sf::FloatRect moonBounds = mWorld.getLunarSurfaceBounds();
     sf::FloatRect landingBounds = mWorld.getLandingZoneBounds();
 
-    if (playerBounds.intersects(moonBounds))
+    sf::Vector2f collisionPoint;
+    if (mWorld.checkCollisionWithSurface(playerBounds, collisionPoint))
     {
-        mPlayer.setPosition({ mPlayer.getPosition().x, moonBounds.top - playerBounds.height });
+        mPlayer.setPosition({ mPlayer.getPosition().x, collisionPoint.y - playerBounds.height });
 
+        // Проверка скорости при посадке
         if (mPlayer.getVelocityY() > Physics::MAX_SAFE_LANDING_SPEED)
         {
             std::cerr << "Crash Landing!" << std::endl;
             mPlayer.crash();
             mUI.updateStatusText("Crash Landing!");
-            if (!explosionSoundPlayed) 
-            { 
+            if (!explosionSoundPlayed)
+            {
                 mSoundManager.playExplosionSound();
                 explosionSoundPlayed = true;
             }
@@ -112,7 +113,7 @@ void Game::checkLanding()
             mPlayer.landSafely();
             mUI.updateStatusText("Landed Successfully!");
         }
-    } 
+    }
 }
 
 void Game::render()
