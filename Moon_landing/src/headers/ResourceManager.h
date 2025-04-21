@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "GameConstants.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>

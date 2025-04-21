@@ -1,4 +1,4 @@
-#include "Player.h"
+﻿#include "Player.h"
 #include "GameConstants.h"
 #include "ResourceManager.h" 
 
@@ -6,7 +6,9 @@ Player::Player()
 {
     mTexture = ResourceManager::loadTexture("Resources/Pictures/Rocket.png");
     mPlayerSprite.setTexture(mTexture);
-    mPlayerSprite.setPosition(static_cast<float>(rand() % static_cast<int>(Screen::WIDTH * 0.8f)), 50.f);
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+    float randomX = static_cast<float>(std::rand() % static_cast<int>(Screen::WIDTH * 0.6f) + Screen::WIDTH * 0.2f);
+    mPlayerSprite.setPosition(randomX, 50.f);
 
     mEngineDownTexture = ResourceManager::loadTexture("Resources/Pictures/rocket_fire(up).png");
     mEngineDownSprite.setTexture(mEngineDownTexture);
@@ -28,7 +30,13 @@ Player::Player()
 
 void Player::update(sf::Time deltaTime)
 {
-    if (isLanded || isCrashed || isMissed) return;
+    if (isLanded || isCrashed || isMissed) 
+    {
+        resetHorizontalEngineState();
+        resetVerticalThrust();
+        updateEngineSpritesVisibility();
+        return;
+    }
 
     if (fuel <= 0 && !isOutOfFuel)
     {

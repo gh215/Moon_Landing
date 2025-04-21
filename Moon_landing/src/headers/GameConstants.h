@@ -1,9 +1,12 @@
-#pragma once
+﻿#pragma once
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include <stdexcept>
 #include <string>
+#include <ctime>
+#include <cstdlib>
+#include <random>
 
 using namespace std;
 
